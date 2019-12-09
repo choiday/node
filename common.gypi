@@ -147,7 +147,7 @@
           'v8_enable_handle_zapping': 1,
           'conditions': [
             ['node_shared != "true"', {
-              'MSVC_runtimeType': 1,    # MultiThreadedDebug (/MTd)
+              'MSVC_runtimeType': 3,    # was 1 MultiThreadedDebug (/MTd)
             }, {
               'MSVC_runtimeType': 3,    # MultiThreadedDebugDLL (/MDd)
             }],
@@ -189,7 +189,7 @@
           'lto': ' -flto=4 -fuse-linker-plugin -ffat-lto-objects ',
           'conditions': [
             ['node_shared != "true"', {
-              'MSVC_runtimeType': 0    # MultiThreaded (/MT)
+              'MSVC_runtimeType': 2    # was 0 MultiThreaded (/MT)
             }, {
               'MSVC_runtimeType': 2   # MultiThreadedDLL (/MD)
             }],

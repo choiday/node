@@ -66,12 +66,12 @@
       'defines': [ '__POSIX__' ],
     }],
     [ 'node_enable_d8=="true"', {
-      'dependencies': [ 'tools/v8_gypfiles/d8.gyp:d8' ],
+      #'dependencies': [ 'tools/v8_gypfiles/d8.gyp:d8' ],
     }],
     [ 'node_use_bundled_v8=="true"', {
       'dependencies': [
-        'tools/v8_gypfiles/v8.gyp:v8_maybe_snapshot',
-        'tools/v8_gypfiles/v8.gyp:v8_libplatform',
+        #'tools/v8_gypfiles/v8.gyp:v8_maybe_snapshot',
+        #'tools/v8_gypfiles/v8.gyp:v8_libplatform',
       ],
     }],
     [ 'node_use_v8_platform=="true"', {
@@ -97,12 +97,12 @@
     [ 'v8_enable_i18n_support==1', {
       'defines': [ 'NODE_HAVE_I18N_SUPPORT=1' ],
       'dependencies': [
-        '<(icu_gyp_path):icui18n',
-        '<(icu_gyp_path):icuuc',
+        #'<(icu_gyp_path):icui18n',
+        #'<(icu_gyp_path):icuuc',
       ],
       'conditions': [
         [ 'icu_small=="true"', {
-          'defines': [ 'NODE_HAVE_SMALL_ICU=1' ],
+          #'defines': [ 'NODE_HAVE_SMALL_ICU=1' ],
       }]],
     }],
     [ 'node_no_browser_globals=="true"', {

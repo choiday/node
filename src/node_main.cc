@@ -28,6 +28,7 @@
 #include <WinError.h>
 
 int wmain(int argc, wchar_t* wargv[]) {
+  v8::V8::InitializeICU("icudtl.dat");
   if (!IsWindows7OrGreater()) {
     fprintf(stderr, "This application is only supported on Windows 7, "
                     "Windows Server 2008 R2, or higher.");

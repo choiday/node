@@ -7,7 +7,7 @@
     'node_use_etw%': 'false',
     'node_no_browser_globals%': 'false',
     'node_use_node_snapshot%': 'false',
-    'node_use_v8_platform%': 'true',
+    'node_use_v8_platform%': 'false',
     'node_use_bundled_v8%': 'true',
     'node_shared%': 'false',
     'force_dynamic_crt%': 0,
@@ -24,6 +24,12 @@
     'node_core_target_name%': 'node',
     'node_lib_target_name%': 'libnode',
     'node_intermediate_lib_type%': 'static_library',
+    'icu_include%': '../chromium/src/third_party/icu/source/common;../chromium/src/third_party/icu/source/i18n',
+    'icu_lib%': '../chromium/src/out/release/icui18n.dll.lib;../chromium/src/out/release/icuuc.dll.lib',
+    'v8_include%': '../chromium/src/v8/include',
+    'v8_lib%': '../chromium/src/out/release/v8.dll.lib',
+    'v8_libbase%': '../chromium/src/out/release/v8_libbase.dll.lib',
+    'v8_libplatform%': '../chromium/src/out/release/v8_libplatform.dll.lib',
     'library_files': [
       'lib/internal/bootstrap/environment.js',
       'lib/internal/bootstrap/loaders.js',
@@ -313,7 +319,8 @@
 
       'include_dirs': [
         'src',
-        'deps/v8/include'
+        '<(v8_include)',
+        '<(icu_include)',
       ],
 
       'sources': [
@@ -351,14 +358,12 @@
           'xcode_settings': {
             'OTHER_LDFLAGS': [
               '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
-              '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
             ],
           },
           'msvs_settings': {
             'VCLinkerTool': {
               'AdditionalOptions': [
                 '/WHOLEARCHIVE:<(node_lib_target_name)<(STATIC_LIB_SUFFIX)',
-                '/WHOLEARCHIVE:<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
               ],
             },
           },
@@ -367,7 +372,6 @@
               'ldflags': [
                 '-Wl,--whole-archive',
                 '<(obj_dir)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
-                '<(obj_dir)/tools/v8_gypfiles/<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
                 '-Wl,--no-whole-archive',
               ],
             }],
@@ -397,6 +401,10 @@
         }],
         ['OS=="win"', {
           'libraries': [
+            '<(v8_lib)',
+            '<(v8_libbase)',
+            '<(v8_libplatform)',
+            '<(icu_lib)',
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
@@ -492,6 +500,8 @@
 
       'include_dirs': [
         'src',
+        '<(v8_include)',
+        '<(icu_include)',
         '<(SHARED_INTERMEDIATE_DIR)' # for node_natives.h
       ],
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
@@ -668,7 +678,7 @@
         'src/util-inl.h',
         # Dependency headers
         'deps/http_parser/http_parser.h',
-        'deps/v8/include/v8.h',
+        'v8.h',
         # javascript files to make for an even more pleasant IDE experience
         '<@(library_files)',
         # node.gyp is added by default, common.gypi is added for change detection
@@ -1088,7 +1098,8 @@
       'include_dirs': [
         'src',
         'tools/msvs/genfiles',
-        'deps/v8/include',
+        '<(v8_include)',
+        '<(icu_include)',
         'deps/cares/include',
         'deps/uv/include',
         'test/cctest',
@@ -1163,6 +1174,10 @@
         }],
         ['OS=="win"', {
           'libraries': [
+            '<(v8_lib)',
+            '<(v8_libbase)',
+            '<(v8_libplatform)',
+            '<(icu_lib)',
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
@@ -1193,7 +1208,8 @@
       'include_dirs': [
         'src',
         'tools/msvs/genfiles',
-        'deps/v8/include',
+        '<(v8_include)',
+        '<(icu_include)',
         'deps/cares/include',
         'deps/uv/include',
       ],
@@ -1212,6 +1228,10 @@
       'conditions': [
         ['OS=="win"', {
           'libraries': [
+            '<(v8_lib)',
+            '<(v8_libbase)',
+            '<(v8_libplatform)',
+            '<(icu_lib)',
             'dbghelp.lib',
             'PsApi.lib',
             'winmm.lib',
@@ -1236,7 +1256,8 @@
       'include_dirs': [
         'src',
         'tools/msvs/genfiles',
-        'deps/v8/include',
+        '<(v8_include)',
+        '<(icu_include)',
         'deps/cares/include',
         'deps/uv/include',
       ],
@@ -1254,6 +1275,10 @@
       'conditions': [
         ['OS=="win"', {
           'libraries': [
+            '<(v8_lib)',
+            '<(v8_libbase)',
+            '<(v8_libplatform)',
+            '<(icu_lib)',
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
@@ -1278,7 +1303,8 @@
           'dependencies': ['<(node_lib_target_name)'],
           'include_dirs': [
             'src',
-            'deps/v8/include',
+            '<(v8_include)',
+            '<(icu_include)',
           ],
           'sources': [
             '<@(library_files)',
