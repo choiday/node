@@ -230,12 +230,12 @@ void MainThreadInterface::Post(std::unique_ptr<Request> request) {
   requests_.push_back(std::move(request));
   if (needs_notify) {
     if (isolate_ != nullptr && platform_ != nullptr) {
-      std::shared_ptr<v8::TaskRunner> taskrunner =
-          platform_->GetForegroundTaskRunner(isolate_);
+      //std::shared_ptr<v8::TaskRunner> taskrunner =
+      //    platform_->GetForegroundTaskRunner(isolate_);
       std::weak_ptr<MainThreadInterface>* interface_ptr =
           new std::weak_ptr<MainThreadInterface>(shared_from_this());
-      taskrunner->PostTask(
-          std::make_unique<DispatchMessagesTask>(*interface_ptr));
+      //taskrunner->PostTask(
+      //    std::make_unique<DispatchMessagesTask>(*interface_ptr));
       isolate_->RequestInterrupt([](v8::Isolate* isolate, void* opaque) {
         std::unique_ptr<std::weak_ptr<MainThreadInterface>> interface_ptr {
           static_cast<std::weak_ptr<MainThreadInterface>*>(opaque) };

@@ -263,7 +263,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                int argc,
                                const char* const* argv,
                                int exec_argc,
-                               const char* const* exec_argv) {
+                               const char* const* exec_argv,
+                               bool bootstrap) {
   Isolate* isolate = context->GetIsolate();
   HandleScope handle_scope(isolate);
   Context::Scope context_scope(context);
@@ -281,8 +282,14 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                       Environment::kOwnsProcessState |
                                       Environment::kOwnsInspector));
   env->InitializeLibuv(per_process::v8_is_profiling);
-  if (env->RunBootstrapping().IsEmpty()) {
+  if (bootstrap && !BootstrapEnvironment(env)) {
     return nullptr;
+  }
+  return env;
+}
+bool BootstrapEnvironment(Environment* env) {
+  if (env->RunBootstrapping().IsEmpty()) {
+    return false;
   }
 
   std::vector<Local<String>> parameters = {
@@ -296,9 +303,10 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
   if (ExecuteBootstrapper(
           env, "internal/bootstrap/environment", &parameters, &arguments)
           .IsEmpty()) {
-    return nullptr;
+    return false;
   }
-  return env;
+
+  return true;
 }
 
 void FreeEnvironment(Environment* env) {

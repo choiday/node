@@ -668,7 +668,7 @@ class NodeInspectorClient : public V8InspectorClient {
     if (!interface_) {
       interface_ = std::make_shared<MainThreadInterface>(
           env_->inspector_agent(), env_->event_loop(), env_->isolate(),
-          env_->isolate_data()->platform());
+          v8::V8::GetCurrentPlatform());
     }
     return interface_->GetHandle();
   }
@@ -707,13 +707,13 @@ class NodeInspectorClient : public V8InspectorClient {
     MultiIsolatePlatform* platform = env_->isolate_data()->platform();
     while (shouldRunMessageLoop()) {
       if (interface_) interface_->WaitForFrontendEvent();
-      while (platform->FlushForegroundTasks(env_->isolate())) {}
+      if (interface_) interface_->DispatchMessages();
     }
     running_nested_loop_ = false;
   }
 
   double currentTimeMS() override {
-    return env_->isolate_data()->platform()->CurrentClockTimeMillis();
+    return v8::V8::GetCurrentPlatform()->CurrentClockTimeMillis();
   }
 
   std::unique_ptr<StringBuffer> resourceNameToUrl(
@@ -951,7 +951,7 @@ void Agent::RequestIoThreadStart() {
   CHECK(start_io_thread_async_initialized);
   uv_async_send(&start_io_thread_async);
   Isolate* isolate = parent_env_->isolate();
-  v8::Platform* platform = parent_env_->isolate_data()->platform();
+  v8::Platform* platform = v8::V8::GetCurrentPlatform();
   std::shared_ptr<TaskRunner> taskrunner =
     platform->GetForegroundTaskRunner(isolate);
   taskrunner->PostTask(std::make_unique<StartIoTask>(this));

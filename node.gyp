@@ -492,6 +492,194 @@
       ],
     }, # node_core_target_name
     {
+      'target_name': 'tn',
+      'type': 'shared_library',
+
+      'defines': [
+        'NODE_WANT_INTERNALS=1',
+        'BUILDING_TN_EXTENSION',
+        'HAVE_INSPECTOR=1',
+      ],
+
+      'includes': [
+        'node.gypi'
+      ],
+
+      'include_dirs': [
+        'src',
+        '<(v8_include)',
+        '<(icu_include)',
+      ],
+
+      'sources': [
+        'src/tn.cc'
+      ],
+
+      'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
+
+      'msvs_settings': {
+        'VCLinkerTool': {
+          'GenerateMapFile': 'true', # /MAP
+          'MapExports': 'true', # /MAPINFO:EXPORTS
+          'RandomizedBaseAddress': 2, # enable ASLR
+          'DataExecutionPrevention': 2, # enable DEP
+          'AllowIsolation': 'true',
+        },
+      },
+
+      # - "C4244: conversion from 'type1' to 'type2', possible loss of data"
+      #   Ususaly safe. Disable for `dep`, enable for `src`
+      'msvs_disabled_warnings!': [4244],
+
+      'conditions': [
+        [ 'node_intermediate_lib_type=="static_library" and '
+            'node_shared=="true" and OS=="aix"', {
+          # For AIX, shared lib is linked by static lib and .exp. In the
+          # case here, the executable needs to link to shared lib.
+          # Therefore, use 'node_aix_shared' target to generate the
+          # shared lib and then executable.
+          'dependencies': [ 'node_aix_shared' ],
+        }, {
+          'dependencies': [ '<(node_lib_target_name)' ],
+        }],
+        [ 'node_intermediate_lib_type=="static_library" and node_shared=="false"', {
+          'xcode_settings': {
+            'OTHER_LDFLAGS': [
+              '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
+            ],
+          },
+          'msvs_settings': {
+            'VCLinkerTool': {
+              'AdditionalOptions': [
+                '/WHOLEARCHIVE:<(node_lib_target_name)<(STATIC_LIB_SUFFIX)',
+              ],
+            },
+          },
+          'conditions': [
+            ['OS != "aix" and OS != "mac"', {
+              'ldflags': [
+                '-Wl,--whole-archive',
+                '<(obj_dir)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
+                '-Wl,--no-whole-archive',
+              ],
+            }],
+            [ 'OS=="win"', {
+              'sources': [ 'src/res/node.rc' ],
+              'conditions': [
+                [ 'node_use_etw=="true"', {
+                  'sources': [
+                    'tools/msvs/genfiles/node_etw_provider.rc'
+                  ],
+                }],
+              ],
+            }],
+          ],
+        }],
+        [ 'node_shared=="true"', {
+          'xcode_settings': {
+            'OTHER_LDFLAGS': [ '-Wl,-rpath,@loader_path', ],
+          },
+        }],
+        [ 'node_report=="true"', {
+          'defines': [
+            'NODE_REPORT',
+            'NODE_ARCH="<(target_arch)"',
+            'NODE_PLATFORM="<(OS)"',
+          ],
+        }],
+        ['OS=="win"', {
+          'libraries': [
+            '<(v8_lib)',
+            '<(v8_libbase)',
+            '<(v8_libplatform)',
+            '<(icu_lib)',
+            'Dbghelp.lib',
+            'winmm.lib',
+            'Ws2_32.lib',
+          ],
+        }],
+        ['node_with_ltcg=="true"', {
+          'msvs_settings': {
+            'VCCLCompilerTool': {
+              'WholeProgramOptimization': 'true'   # /GL, whole program optimization, needed for LTCG
+            },
+            'VCLibrarianTool': {
+              'AdditionalOptions': [
+                '/LTCG:INCREMENTAL',               # link time code generation
+              ],
+            },
+            'VCLinkerTool': {
+              'OptimizeReferences': 2,             # /OPT:REF
+              'EnableCOMDATFolding': 2,            # /OPT:ICF
+              'LinkIncremental': 1,                # disable incremental linking
+              'AdditionalOptions': [
+                '/LTCG:INCREMENTAL',               # incremental link-time code generation
+              ],
+            }
+          }
+        }, {
+          'msvs_settings': {
+            'VCCLCompilerTool': {
+              'WholeProgramOptimization': 'false'
+            },
+            'VCLinkerTool': {
+              'LinkIncremental': 2                 # enable incremental linking
+            },
+          },
+         }],
+        ['want_separate_host_toolset==0', {
+          'dependencies': [
+            'mkcodecache',
+          ],
+          'actions': [
+            {
+              'action_name': 'run_mkcodecache',
+              'process_outputs_as_sources': 1,
+              'inputs': [
+                '<(mkcodecache_exec)',
+              ],
+              'outputs': [
+                '<(SHARED_INTERMEDIATE_DIR)/node_code_cache.cc',
+              ],
+              'action': [
+                '<@(_inputs)',
+                '<@(_outputs)',
+              ],
+            },
+          ],
+        }, {
+          'sources': [
+            'src/node_code_cache_stub.cc'
+          ],
+        }],
+        ['node_use_node_snapshot=="true"', {
+          'dependencies': [
+            'node_mksnapshot',
+          ],
+          'actions': [
+            {
+              'action_name': 'node_mksnapshot',
+              'process_outputs_as_sources': 1,
+              'inputs': [
+                '<(node_mksnapshot_exec)',
+              ],
+              'outputs': [
+                '<(SHARED_INTERMEDIATE_DIR)/node_snapshot.cc',
+              ],
+              'action': [
+                '<@(_inputs)',
+                '<@(_outputs)',
+              ],
+            },
+          ],
+        }, {
+          'sources': [
+            'src/node_snapshot_stub.cc'
+          ],
+        }],
+      ],
+    }, # tn
+    {
       'target_name': '<(node_lib_target_name)',
       'type': '<(node_intermediate_lib_type)',
       'includes': [

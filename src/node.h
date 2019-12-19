@@ -328,8 +328,10 @@ NODE_EXTERN Environment* CreateEnvironment(IsolateData* isolate_data,
                                            int argc,
                                            const char* const* argv,
                                            int exec_argc,
-                                           const char* const* exec_argv);
+                                           const char* const* exec_argv,
+                                           bool bootstrap = true);
 
+NODE_EXTERN bool BootstrapEnvironment(Environment* env);
 NODE_EXTERN void LoadEnvironment(Environment* env);
 NODE_EXTERN void FreeEnvironment(Environment* env);
 
