@@ -33,6 +33,8 @@ struct NodeBindings::PImpl {
 
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
+
+  std::function<void(const std::string& logMessage)> logger_;
 };
 NodeBindings& NodeBindings::getInstance() {
   static NodeBindings* instance = new NodeBindings();
@@ -52,7 +54,9 @@ void NodeBindings::initializeContext(v8::Local<v8::Context> context) {
   bool initialized = node::InitializeContext(context);
   m_impl->CreateEnvironment(context, nullptr);
 }
-
+v8::Local<v8::Context> NodeBindings::getContext() {
+  return m_impl->env_->context();
+}
 void NodeBindings::update() {
   node::Environment* env = m_impl->env_;
   if (!env) return;
@@ -66,8 +70,23 @@ void NodeBindings::update() {
   v8::MicrotasksScope script_scope(env->isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
+  v8::TryCatch __trycatch(env->isolate());
   // Deal with uv events.
   int r = uv_run(m_impl->uv_loop_, UV_RUN_NOWAIT);
+
+  if (__trycatch.HasCaught()) {
+    v8::String::Utf8Value ascii(env->isolate(), __trycatch.Message()->Get());
+    v8::String::Utf8Value stackMessage(
+        env->isolate(), __trycatch.StackTrace(env->context()).ToLocalChecked());
+    if (m_impl->logger_)
+    {
+      m_impl->logger_(std::string(*stackMessage, stackMessage.length()));
+    }
+  }
+}
+void NodeBindings::registerLogCallback(
+    std::function<void(const std::string& logMessage)> callbackFn) {
+  m_impl->logger_ = callbackFn;
 }
 
 // Create the environment and load node.js.
@@ -116,9 +135,13 @@ void NodeBindings::PImpl::CreateEnvironment(
     v8::String::Utf8Value ascii(env->isolate(), __trycatch.Message()->Get());
     v8::String::Utf8Value stackMessage(
         env->isolate(), __trycatch.StackTrace(context).ToLocalChecked());
+
+    if (logger_) {
+      logger_(std::string(*stackMessage, stackMessage.length()));
+    }
+
   }
 
   env_ = env;
 }
-
 }  // namespace titan

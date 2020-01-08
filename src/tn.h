@@ -14,7 +14,9 @@ public:
   static NodeBindings& getInstance();
 
   void initializeContext(v8::Local<v8::Context> context);
+  v8::Local<v8::Context> getContext();
   void update();
+  void registerLogCallback(std::function<void(const std::string& logMessage)> callbackFn);
 
 private:
   NodeBindings();
