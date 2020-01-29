@@ -13,10 +13,10 @@ class TN_EXTERN NodeBindings {
 public:
   static NodeBindings& getInstance();
 
-  void initializeContext(v8::Local<v8::Context> context);
-  v8::Local<v8::Context> getContext();
+  void initializeMainContext(v8::Local<v8::Context> context);
+  void initializeContext(const char* name, v8::Local<v8::Context> context);
   void update();
-  void registerLogCallback(std::function<void(const std::string& logMessage)> callbackFn);
+  void registerLogCallback(std::function<void(const char* logMessage)> callbackFn);
 
 private:
   NodeBindings();

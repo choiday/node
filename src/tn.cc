@@ -34,7 +34,7 @@ struct NodeBindings::PImpl {
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
 
-  std::function<void(const std::string& logMessage)> logger_;
+  std::function<void(const char* logMessage)> logger_;
 };
 NodeBindings& NodeBindings::getInstance() {
   static NodeBindings* instance = new NodeBindings();
@@ -50,12 +50,19 @@ NodeBindings::NodeBindings() : m_impl(new PImpl) {
 }
 NodeBindings::~NodeBindings() {}
 
-void NodeBindings::initializeContext(v8::Local<v8::Context> context) {
+void NodeBindings::initializeMainContext(v8::Local<v8::Context> context) {
   bool initialized = node::InitializeContext(context);
   m_impl->CreateEnvironment(context, nullptr);
 }
-v8::Local<v8::Context> NodeBindings::getContext() {
-  return m_impl->env_->context();
+void NodeBindings::initializeContext(const char* name,
+                                     v8::Local<v8::Context> context) {
+  bool initialized = node::InitializeContext(context);
+  node::Environment* env = m_impl->env_;
+
+  ContextInfo info(name);
+  info.origin = name;
+
+  env->AssignToContext(context, info);
 }
 void NodeBindings::update() {
   node::Environment* env = m_impl->env_;
@@ -80,12 +87,12 @@ void NodeBindings::update() {
         env->isolate(), __trycatch.StackTrace(env->context()).ToLocalChecked());
     if (m_impl->logger_)
     {
-      m_impl->logger_(std::string(*stackMessage, stackMessage.length()));
+      m_impl->logger_(*stackMessage);
     }
   }
 }
 void NodeBindings::registerLogCallback(
-    std::function<void(const std::string& logMessage)> callbackFn) {
+    std::function<void(const char* logMessage)> callbackFn) {
   m_impl->logger_ = callbackFn;
 }
 
@@ -137,7 +144,7 @@ void NodeBindings::PImpl::CreateEnvironment(
         env->isolate(), __trycatch.StackTrace(context).ToLocalChecked());
 
     if (logger_) {
-      logger_(std::string(*stackMessage, stackMessage.length()));
+      logger_(*stackMessage);
     }
 
   }
