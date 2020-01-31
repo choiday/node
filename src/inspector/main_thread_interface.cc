@@ -230,9 +230,9 @@ void MainThreadInterface::Post(std::unique_ptr<Request> request) {
   requests_.push_back(std::move(request));
   if (needs_notify) {
     if (isolate_ != nullptr && platform_ != nullptr) {
-      std::shared_ptr<v8::TaskRunner> taskrunner =
-        platform_->GetForegroundTaskRunner(isolate_);
-      taskrunner->PostTask(std::make_unique<DispatchMessagesTask>(this));
+      // std::shared_ptr<v8::TaskRunner> taskrunner =
+      //   platform_->GetForegroundTaskRunner(isolate_);
+      //taskrunner->PostTask(std::make_unique<DispatchMessagesTask>(this));
       isolate_->RequestInterrupt([](v8::Isolate* isolate, void* thread) {
         static_cast<MainThreadInterface*>(thread)->DispatchMessages();
       }, this);

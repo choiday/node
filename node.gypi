@@ -70,27 +70,29 @@
     }],
 
     [ 'node_enable_d8=="true"', {
-      'dependencies': [ 'deps/v8/gypfiles/d8.gyp:d8' ],
+      #'dependencies': [ 'deps/v8/gypfiles/d8.gyp:d8' ],
     }],
     [ 'node_use_bundled_v8=="true"', {
       'conditions': [
         [ 'build_v8_with_gn=="true"', {
-          'dependencies': ['deps/v8/gypfiles/v8-monolithic.gyp:v8_monolith'],
+          'dependencies': [
+            #'deps/v8/gypfiles/v8-monolithic.gyp:v8_monolith'
+            ],
         }, {
           'dependencies': [
-            'deps/v8/gypfiles/v8.gyp:v8',
-            'deps/v8/gypfiles/v8.gyp:v8_libplatform',
+            #'deps/v8/gypfiles/v8.gyp:v8',
+            #'deps/v8/gypfiles/v8.gyp:v8_libplatform',
           ],
         }],
       ],
     }],
     [ 'node_use_v8_platform=="true"', {
       'defines': [
-        'NODE_USE_V8_PLATFORM=1',
+      #  'NODE_USE_V8_PLATFORM=1',
       ],
     }, {
       'defines': [
-        'NODE_USE_V8_PLATFORM=0',
+      #  'NODE_USE_V8_PLATFORM=0',
       ],
     }],
     [ 'node_tag!=""', {
@@ -107,12 +109,12 @@
     [ 'v8_enable_i18n_support==1', {
       'defines': [ 'NODE_HAVE_I18N_SUPPORT=1' ],
       'dependencies': [
-        '<(icu_gyp_path):icui18n',
-        '<(icu_gyp_path):icuuc',
+        #'<(icu_gyp_path):icui18n',
+        #'<(icu_gyp_path):icuuc',
       ],
       'conditions': [
         [ 'icu_small=="true"', {
-          'defines': [ 'NODE_HAVE_SMALL_ICU=1' ],
+          #'defines': [ 'NODE_HAVE_SMALL_ICU=1' ],
       }]],
     }],
     [ 'node_use_bundled_v8=="true" and \

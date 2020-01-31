@@ -67,8 +67,6 @@ EXPORTS
     gzseek64
     gztell64
     gzoffset64
-    adler32_combine64
-    crc32_combine64
 ; checksum functions
     adler32
     adler32_z

@@ -802,7 +802,7 @@ inline std::unique_ptr<Environment> CreateMainEnvironment(
   env->InitializeLibuv(per_process::v8_is_profiling);
   env->ProcessCliArgs(args, exec_args);
 
-#if HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
+#if HAVE_INSPECTOR
   CHECK(!env->inspector_agent()->IsListening());
   // Inspector agent can't fail to start, but if it was configured to listen
   // right away on the websocket port and fails to bind/etc, this will return
@@ -817,10 +817,10 @@ inline std::unique_ptr<Environment> CreateMainEnvironment(
     return env;
   }
 #else
-  // inspector_enabled can't be true if !HAVE_INSPECTOR or !NODE_USE_V8_PLATFORM
+  // inspector_enabled can't be true if !HAVE_INSPECTOR
   // - the option parser should not allow that.
   CHECK(!env->options()->debug_options().inspector_enabled);
-#endif  // HAVE_INSPECTOR && NODE_USE_V8_PLATFORM
+#endif  // HAVE_INSPECTOR
 
   if (RunBootstrapping(env.get()).IsEmpty()) {
     *exit_code = 1;

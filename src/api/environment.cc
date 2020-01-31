@@ -226,7 +226,8 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                int argc,
                                const char* const* argv,
                                int exec_argc,
-                               const char* const* exec_argv) {
+                               const char* const* exec_argv,
+                               bool bootstrap) {
   Isolate* isolate = context->GetIsolate();
   HandleScope handle_scope(isolate);
   Context::Scope context_scope(context);
@@ -243,10 +244,15 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
                                       Environment::kOwnsInspector));
   env->InitializeLibuv(per_process::v8_is_profiling);
   env->ProcessCliArgs(args, exec_args);
-  if (RunBootstrapping(env).IsEmpty()) {
+  if (bootstrap && !BootstrapEnvironment(env)) {
     return nullptr;
   }
-
+  return env;
+}
+bool BootstrapEnvironment(Environment* env) {
+  if (RunBootstrapping(env).IsEmpty()) {
+    return false;
+  }
   std::vector<Local<String>> parameters = {
       env->require_string(),
       FIXED_ONE_BYTE_STRING(env->isolate(), "markBootstrapComplete")};
@@ -311,10 +317,8 @@ MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
   return handle_scope.Escape(exports);
 }
 
-Local<Context> NewContext(Isolate* isolate,
-                          Local<ObjectTemplate> object_template) {
-  auto context = Context::New(isolate, nullptr, object_template);
-  if (context.IsEmpty()) return context;
+bool InitializeContext(Local<Context> context) {
+  Isolate* isolate = context->GetIsolate();
   HandleScope handle_scope(isolate);
 
   context->SetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration,
@@ -325,39 +329,44 @@ Local<Context> NewContext(Isolate* isolate,
     Context::Scope context_scope(context);
     Local<Object> exports;
     if (!GetPerContextExports(context).ToLocal(&exports))
-      return Local<Context>();
+      return false;
 
     Local<String> global_string = FIXED_ONE_BYTE_STRING(isolate, "global");
     Local<String> exports_string = FIXED_ONE_BYTE_STRING(isolate, "exports");
 
-    static const char* context_files[] = {
-      "internal/per_context/setup",
-      "internal/per_context/domexception",
-      nullptr
-    };
+    static const char* context_files[] = {"internal/per_context/setup",
+                                          "internal/per_context/domexception",
+                                          nullptr};
 
     for (const char** module = context_files; *module != nullptr; module++) {
-      std::vector<Local<String>> parameters = {
-        global_string,
-        exports_string
-      };
+      std::vector<Local<String>> parameters = {global_string, exports_string};
       Local<Value> arguments[] = {context->Global(), exports};
       MaybeLocal<Function> maybe_fn =
           per_process::native_module_loader.LookupAndCompile(
               context, *module, &parameters, nullptr);
       if (maybe_fn.IsEmpty()) {
-        return Local<Context>();
+        return false;
       }
       Local<Function> fn = maybe_fn.ToLocalChecked();
-      MaybeLocal<Value> result =
-          fn->Call(context, Undefined(isolate),
-                   arraysize(arguments), arguments);
+      MaybeLocal<Value> result = fn->Call(
+          context, Undefined(isolate), arraysize(arguments), arguments);
       // Execution failed during context creation.
       // TODO(joyeecheung): deprecate this signature and return a MaybeLocal.
       if (result.IsEmpty()) {
-        return Local<Context>();
+        return false;
       }
     }
+  }
+
+  return true;
+}
+Local<Context> NewContext(Isolate* isolate,
+                          Local<ObjectTemplate> object_template) {
+  auto context = Context::New(isolate, nullptr, object_template);
+  if (context.IsEmpty()) return context;
+
+  if (!InitializeContext(context)) {
+    return Local<Context>();
   }
 
   return context;

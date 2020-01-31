@@ -7,7 +7,7 @@
     'node_use_etw%': 'false',
     'node_no_browser_globals%': 'false',
     'node_code_cache_path%': '',
-    'node_use_v8_platform%': 'true',
+    'node_use_v8_platform%': 'false',
     'node_use_bundled_v8%': 'true',
     'node_shared%': 'false',
     'force_dynamic_crt%': 0,
@@ -26,6 +26,12 @@
     'node_core_target_name%': 'node',
     'node_lib_target_name%': 'node_lib',
     'node_intermediate_lib_type%': 'static_library',
+    'icu_include%': '../chromium/src/third_party/icu/source/common;../chromium/src/third_party/icu/source/i18n',
+    'icu_lib%': '../chromium/src/out/release/icui18n.dll.lib;../chromium/src/out/release/icuuc.dll.lib',
+    'v8_include%': '../chromium/src/v8/include',
+    'v8_lib%': '../chromium/src/out/release/v8.dll.lib',
+    'v8_libbase%': '../chromium/src/out/release/v8_libbase.dll.lib',
+    'v8_libplatform%': '../chromium/src/out/release/v8_libplatform.dll.lib',    
     'library_files': [
       'lib/internal/bootstrap/primordials.js',
       'lib/internal/bootstrap/cache.js',
@@ -265,7 +271,8 @@
       ],
       'include_dirs': [
         'src',
-        'deps/v8/include'
+        '<(v8_include)',
+        '<(icu_include)',
       ],
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
 
@@ -339,6 +346,10 @@
           'conditions': [
             ['OS=="win"', {
               'libraries': [
+                '<(v8_lib)',
+                '<(v8_libbase)',
+                '<(v8_libplatform)',
+                '<(icu_lib)',                
                 'dbghelp.lib',
                 'PsApi.lib',
                 'Ws2_32.lib',
@@ -354,6 +365,116 @@
       ],
     }, # node_core_target_name
     {
+      'target_name': 'tn',
+      'type': 'shared_library',
+      'defines': [
+        'NODE_WANT_INTERNALS=1',
+        'BUILDING_TN_EXTENSION',
+        'HAVE_INSPECTOR=1',
+      ],
+
+      'sources': [
+        'src/tn.cc'
+      ],
+      'includes': [
+        'node.gypi'
+      ],
+      'include_dirs': [
+        'src',
+        '<(v8_include)',
+        '<(icu_include)',
+      ],
+      'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
+
+      # - "C4244: conversion from 'type1' to 'type2', possible loss of data"
+      #   Ususaly safe. Disable for `dep`, enable for `src`
+      'msvs_disabled_warnings!': [4244],
+
+      'conditions': [
+        [ 'node_intermediate_lib_type=="static_library" and '
+            'node_shared=="true" and OS=="aix"', {
+          # For AIX, shared lib is linked by static lib and .exp. In the
+          # case here, the executable needs to link to shared lib.
+          # Therefore, use 'node_aix_shared' target to generate the
+          # shared lib and then executable.
+          'dependencies': [ 'node_aix_shared' ],
+        }, {
+          'dependencies': [ '<(node_lib_target_name)' ],
+        }],
+        [ 'node_intermediate_lib_type=="static_library" and '
+            'node_shared=="false"', {
+          'xcode_settings': {
+            'OTHER_LDFLAGS': [
+              '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)'
+                  '<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
+            ],
+          },
+          'msvs_settings': {
+            'VCLinkerTool': {
+              'AdditionalOptions': [
+                '/WHOLEARCHIVE:<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
+              ],
+            },
+          },
+          'conditions': [
+            ['OS!="aix"', {
+              'ldflags': [
+                '-Wl,--whole-archive,<(obj_dir)/<(STATIC_LIB_PREFIX)'
+                    '<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
+                '-Wl,--no-whole-archive',
+              ],
+            }],
+            [ 'OS=="win"', {
+              'sources': [ 'src/res/node.rc' ],
+              'conditions': [
+                [ 'node_use_etw=="true"', {
+                  'sources': [
+                    'tools/msvs/genfiles/node_etw_provider.rc'
+                  ],
+                }],
+              ],
+            }],
+          ],
+        }],
+        [ 'node_shared=="true"', {
+          'xcode_settings': {
+            'OTHER_LDFLAGS': [ '-Wl,-rpath,@loader_path', ],
+          },
+        }],
+        [ 'node_intermediate_lib_type=="shared_library" and OS=="win"', {
+          # On Windows, having the same name for both executable and shared
+          # lib causes filename collision. Need a different PRODUCT_NAME for
+          # the executable and rename it back to node.exe later
+          'product_name': '<(node_core_target_name)-win',
+        }],
+        [ 'node_report=="true"', {
+          'defines': [
+            'NODE_REPORT',
+            'NODE_ARCH="<(target_arch)"',
+            'NODE_PLATFORM="<(OS)"',
+          ],
+          'conditions': [
+            ['OS=="win"', {
+              'libraries': [
+                '<(v8_lib)',
+                '<(v8_libbase)',
+                '<(v8_libplatform)',
+                '<(icu_lib)',                
+                'dbghelp.lib',
+                'PsApi.lib',
+                'Ws2_32.lib',
+              ],
+              'dll_files': [
+                'dbghelp.dll',
+                'PsApi.dll',
+                'Ws2_32.dll',
+              ],
+            }],
+          ],
+        }],
+      ],
+    }, # tn
+    {
       'target_name': '<(node_lib_target_name)',
       'type': '<(node_intermediate_lib_type)',
       'product_name': '<(node_core_target_name)',
@@ -363,6 +484,8 @@
 
       'include_dirs': [
         'src',
+        '<(v8_include)',
+        '<(icu_include)',
         '<(SHARED_INTERMEDIATE_DIR)' # for node_natives.h
       ],
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
@@ -533,7 +656,7 @@
         'src/util-inl.h',
         # Dependency headers
         'deps/http_parser/http_parser.h',
-        'deps/v8/include/v8.h',
+        'v8.h',
         # javascript files to make for an even more pleasant IDE experience
         '<@(library_files)',
         # node.gyp is added by default, common.gypi is added for change detection
@@ -682,6 +805,10 @@
           'conditions': [
             ['OS=="win"', {
               'libraries': [
+                '<(v8_lib)',
+                '<(v8_libbase)',
+                '<(v8_libplatform)',
+                '<(icu_lib)',                
                 'dbghelp.lib',
                 'PsApi.lib',
                 'Ws2_32.lib',
@@ -987,7 +1114,8 @@
       'include_dirs': [
         'src',
         'tools/msvs/genfiles',
-        'deps/v8/include',
+        '<(v8_include)',
+        '<(icu_include)',
         'deps/cares/include',
         'deps/uv/include',
         '<(SHARED_INTERMEDIATE_DIR)', # for node_natives.h
@@ -1047,6 +1175,10 @@
           'conditions': [
             ['OS=="win"', {
               'libraries': [
+                '<(v8_lib)',
+                '<(v8_libbase)',
+                '<(v8_libplatform)',
+                '<(icu_lib)',                
                 'dbghelp.lib',
                 'PsApi.lib',
                 'Ws2_32.lib',
@@ -1078,7 +1210,8 @@
           'dependencies': [ '<(node_lib_target_name)' ],
           'include_dirs': [
             'src',
-            'deps/v8/include',
+            '<(v8_include)',
+            '<(icu_include)',            
           ],
           'sources': [
             '<@(library_files)',

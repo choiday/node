@@ -6,7 +6,7 @@
 #include "util.h"
 #include "async_wrap-inl.h"
 
-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
+#if HAVE_INSPECTOR
 #include "inspector/worker_inspector.h"  // ParentInspectorHandle
 #endif
 
@@ -37,7 +37,7 @@ namespace worker {
 
 namespace {
 
-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
+#if HAVE_INSPECTOR
 void StartWorkerInspector(
     Environment* child,
     std::unique_ptr<inspector::ParentInspectorHandle> parent_handle,
@@ -91,7 +91,7 @@ Worker::Worker(Environment* env,
                 Number::New(env->isolate(), static_cast<double>(thread_id_)))
       .FromJust();
 
-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
+#if HAVE_INSPECTOR
   inspector_parent_handle_ =
       env->inspector_agent()->GetParentHandle(thread_id_, url);
 #endif
@@ -224,7 +224,7 @@ void Worker::Run() {
         env_->stop_sub_worker_contexts();
         env_->RunCleanup();
         RunAtExit(env_.get());
-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
+#if HAVE_INSPECTOR
         if (inspector_started)
           WaitForWorkerInspectorToStop(env_.get());
 #endif
@@ -267,7 +267,7 @@ void Worker::Run() {
       Debug(this, "Created Environment for worker with id %llu", thread_id_);
       if (is_stopped()) return;
       {
-#if NODE_USE_V8_PLATFORM && HAVE_INSPECTOR
+#if HAVE_INSPECTOR
         StartWorkerInspector(env_.get(),
                              std::move(inspector_parent_handle_),
                              url_);

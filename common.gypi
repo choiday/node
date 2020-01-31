@@ -136,7 +136,7 @@
           ['node_shared=="false"', {
             'msvs_settings': {
               'VCCLCompilerTool': {
-                'RuntimeLibrary': 1 # MultiThreadedDebug (/MTd)
+                'RuntimeLibrary': 3 # MultiThreadedDebug (/MTd)
               }
             }
           }]
@@ -211,7 +211,7 @@
           ['node_shared=="false"', {
             'msvs_settings': {
               'VCCLCompilerTool': {
-                'RuntimeLibrary': 0 # MultiThreaded (/MT)
+                'RuntimeLibrary': 2 # MultiThreaded (/MT)
               }
             }
           }],
